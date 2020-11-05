@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode, memo } from 'react'
+import React, { ReactNode, memo } from 'react'
 import {
   TouchableOpacity,
   StyleSheet,
@@ -12,6 +12,7 @@ import { Flag } from './Flag'
 import { useContext } from './CountryContext'
 import { CountryText } from './CountryText'
 import { useTheme } from './CountryTheme'
+import { useAsync } from 'react-async-hook'
 
 const styles = StyleSheet.create({
   container: {
@@ -59,19 +60,17 @@ const FlagWithSomething = memo(
     placeholder,
   }: FlagWithSomethingProp) => {
     const { translation, getCountryInfoAsync } = useContext()
-    const [state, setState] = useState({
-      countryName: '',
-      currency: '',
-      callingCode: '',
-    })
-    const { countryName, currency, callingCode } = state
-    useEffect(() => {
+    const asyncGetCountryInfoAsync = async (
+      countryCode: any,
+      _withCountryNameButton: any,
+      _withCurrencyButton: any,
+      _withCallingCodeButton: any) => {
       if (countryCode) {
-        getCountryInfoAsync({ countryCode, translation })
-          .then(setState)
-          .catch(console.warn)
+        return await getCountryInfoAsync({ countryCode, translation })
       }
-    }, [
+      return;
+    }
+    const asyncResult = useAsync(asyncGetCountryInfoAsync, [
       countryCode,
       withCountryNameButton,
       withCurrencyButton,
@@ -88,14 +87,14 @@ const FlagWithSomething = memo(
           <FlagText>{placeholder}</FlagText>
         )}
 
-        {withCountryNameButton && countryName ? (
-          <FlagText>{countryName + ' '}</FlagText>
+        {withCountryNameButton && asyncResult.result && asyncResult.result.countryName ? (
+          <FlagText>{asyncResult.result.countryName + ' '}</FlagText>
         ) : null}
-        {withCurrencyButton && currency ? (
-          <FlagText>{`(${currency}) `}</FlagText>
+        {withCurrencyButton && asyncResult.result && asyncResult.result.currency ? (
+          <FlagText>{`(${asyncResult.result.currency}) `}</FlagText>
         ) : null}
-        {withCallingCodeButton && callingCode ? (
-          <FlagText>{`+${callingCode}`}</FlagText>
+        {withCallingCodeButton && asyncResult.result && asyncResult.result.callingCode ? (
+          <FlagText>{`+${asyncResult.result.callingCode}`}</FlagText>
         ) : null}
       </View>
     )
