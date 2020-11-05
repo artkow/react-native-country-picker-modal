@@ -1,4 +1,4 @@
-import React, { useState, useEffect, ReactNode, memo } from 'react'
+import React, { ReactNode, memo } from 'react'
 import {
   TouchableOpacity,
   StyleSheet,
@@ -12,6 +12,7 @@ import { Flag } from './Flag'
 import { useContext } from './CountryContext'
 import { CountryText } from './CountryText'
 import { useTheme } from './CountryTheme'
+import { useAsync } from 'react-async-hook'
 
 const styles = StyleSheet.create({
   container: {
@@ -59,19 +60,15 @@ const FlagWithSomething = memo(
     placeholder,
   }: FlagWithSomethingProp) => {
     const { translation, getCountryInfoAsync } = useContext()
-    const [state, setState] = useState({
-      countryName: '',
-      currency: '',
-      callingCode: '',
-    })
-    const { countryName, currency, callingCode } = state
-    useEffect(() => {
+    const asyncGetCountryInfoAsync = async (countryCode,
+      withCountryNameButton,
+      withCurrencyButton,
+      withCallingCodeButton ) => {
       if (countryCode) {
-        getCountryInfoAsync({ countryCode, translation })
-          .then(setState)
-          .catch(console.warn)
+        return await getCountryInfoAsync({ countryCode, translation })
       }
-    }, [
+    }
+    const asyncResult = useAsync(asyncGetCountryInfoAsync, [
       countryCode,
       withCountryNameButton,
       withCurrencyButton,
@@ -81,21 +78,21 @@ const FlagWithSomething = memo(
     return (
       <View style={styles.flagWithSomethingContainer}>
         {countryCode ? (
+          <FlagText>{placeholder}</FlagText>
+        ) : (
           <Flag
             {...{ withEmoji, countryCode, withFlagButton, flagSize: flagSize! }}
           />
-        ) : (
-          <FlagText>{placeholder}</FlagText>
         )}
 
-        {withCountryNameButton && countryName ? (
-          <FlagText>{countryName + ' '}</FlagText>
+        {withCountryNameButton && asyncResult.result?.countryName ? (
+          <FlagText>{asyncResult.result.countryName + ' '}</FlagText>
         ) : null}
-        {withCurrencyButton && currency ? (
-          <FlagText>{`(${currency}) `}</FlagText>
+        {withCurrencyButton && asyncResult.result?.currency ? (
+          <FlagText>{`(${asyncResult.result.currency}) `}</FlagText>
         ) : null}
-        {withCallingCodeButton && callingCode ? (
-          <FlagText>{`+${callingCode}`}</FlagText>
+        {withCallingCodeButton && asyncResult.result?.callingCode ? (
+          <FlagText>{`+${asyncResult.result.callingCode}`}</FlagText>
         ) : null}
       </View>
     )
